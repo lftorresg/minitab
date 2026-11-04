@@ -50,6 +50,11 @@ P12_PASS=$(/usr/bin/openssl rand -hex 16)
 security unlock-keychain -p "$KC_PASS" "$KEYCHAIN"
 # No -T / -A flags on purpose: no app gets silent access to the key; every signing asks.
 security import "$TMP/identity.p12" -k "$KEYCHAIN" -P "$P12_PASS" -f pkcs12 >/dev/null
+# Trust the certificate for code signing only (your user's trust settings). Without this,
+# macOS treats the signature as untrusted and doesn't keep permissions across builds.
+# macOS asks for your password here.
+echo "Marking the certificate as trusted for code signing (macOS will ask for your password)…"
+security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN" "$TMP/cert.pem"
 security lock-keychain "$KEYCHAIN"
 
 HASH=$(/usr/bin/openssl x509 -in "$TMP/cert.pem" -noout -fingerprint -sha1 | sed 's/.*=//; s/://g')
@@ -66,3 +71,4 @@ echo "  click \"Allow\", never \"Always Allow\"."
 echo "- Enable MiniTab's permissions one last time. From now on, rebuilds keep them."
 echo
 echo "To undo: security delete-keychain \"$KEYCHAIN\" && rm .signing.env"
+echo "(and remove \"$NAME\" from Keychain Access > Certificate trust settings if listed)"

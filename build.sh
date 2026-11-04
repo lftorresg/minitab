@@ -73,3 +73,16 @@ fi
 
 open /Applications/MiniTab.app
 echo "Installed to /Applications/MiniTab.app"
+
+# macOS re-lists ad-hoc signed apps under Accessibility by itself, but not under Screen
+# Recording: they have to be added by hand. Open the pane and reveal the app to make it quick.
+THUMBNAILS=$(defaults read "$BUNDLE_ID" showThumbnails 2>/dev/null || echo 1)
+if [[ -z "${SIGN_IDENTITY:-}" && "$THUMBNAILS" != "0" ]]; then
+    echo
+    echo "Screen Recording: drag MiniTab from the Finder window into the list (or use +),"
+    echo "turn it on, then quit and reopen MiniTab. To skip this on every build, run"
+    echo "scripts/setup-signing.sh once, or turn off Show Thumbnails."
+    sleep 1
+    open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+    open -R /Applications/MiniTab.app
+fi

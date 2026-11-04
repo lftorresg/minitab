@@ -99,7 +99,7 @@ MiniTab needs powerful permissions, so it is designed to use as little of them a
 
 MiniTab supports two signing modes.
 
-**Ad-hoc (default).** macOS ties MiniTab's permissions to the exact binary, so nothing else can ever inherit them. The trade-off is that each new build needs the permissions enabled again. `./build.sh --install` clears the outdated entries automatically, so you only switch MiniTab on when macOS asks.
+**Ad-hoc (default).** macOS ties MiniTab's permissions to the exact binary, so nothing else can ever inherit them. The trade-off is that each new build needs the permissions enabled again. `./build.sh --install` clears the outdated entries automatically: Accessibility reappears and only needs switching on, while Screen Recording must be re-added with **+** (the script opens the pane and reveals the app).
 
 **Local signing identity (optional).** Permissions survive rebuilds. Run once:
 
@@ -107,7 +107,7 @@ MiniTab supports two signing modes.
 ./scripts/setup-signing.sh
 ```
 
-This creates a self-signed code-signing certificate in a dedicated, password-protected keychain that locks after five minutes and on sleep, and that grants no application silent access to the key. `build.sh` picks it up automatically. When signing, macOS asks for that keychain's password and whether `codesign` may use the key: choose **Allow**, never **Always Allow**.
+This creates a self-signed code-signing certificate in a dedicated, password-protected keychain that locks after five minutes and on sleep, and that grants no application silent access to the key. The certificate is marked as trusted for code signing only, in your user's trust settings (required for macOS to keep permissions across builds; it does not affect Gatekeeper). `build.sh` picks it up automatically. When signing, macOS asks for that keychain's password and whether `codesign` may use the key: choose **Allow**, never **Always Allow**.
 
 Why the extra care: with a stable identity, macOS grants MiniTab's permissions to *any* binary signed with that key under MiniTab's bundle ID. Keeping the key locked and confirmation-gated ensures it can't be used silently. To remove it: `security delete-keychain ~/Library/Keychains/minitab-signing.keychain-db && rm .signing.env`.
 
@@ -154,6 +154,7 @@ Turning off **Include Other Spaces** disables everything Spaces-related. Runtime
 | Problem | Solution |
 |---|---|
 | Shortcut does nothing after a rebuild | Switch MiniTab on in Accessibility (and Screen Recording), or set up a local signing identity; see [Code signing](#code-signing) |
+| MiniTab is missing from the Screen Recording list | macOS doesn't re-list ad-hoc signed apps there after a rebuild. Add it with **+** (`build.sh --install` opens the pane and reveals the app for you), enable it, then quit and reopen MiniTab. With a [local signing identity](#code-signing) this is needed only once |
 | Permissions are stuck | `tccutil reset Accessibility io.github.lftorresg.minitab` (and `ScreenCapture`), then grant again |
 | ⌘Tab stopped working after a crash | Launch MiniTab again (it restores the system ⌘Tab at startup), or log out and back in |
 | Shortcut ignored in password fields | macOS Secure Input blocks keyboard monitoring; MiniTab falls back to switching to the previous window and shows ⚠︎ in the menu |

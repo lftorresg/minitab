@@ -561,7 +561,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.activate()
         switch alert.runModal() {
         case .alertFirstButtonReturn: Permissions.openSettings(.accessibility)
-        case .alertSecondButtonReturn: Permissions.openSettings(.screenRecording)
+        case .alertSecondButtonReturn:
+            // Make sure MiniTab is listed there (it may have been removed by a reset).
+            if !Permissions.screenRecording { Permissions.requestScreenRecording() }
+            Permissions.openSettings(.screenRecording)
         default: break
         }
     }
