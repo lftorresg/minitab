@@ -1,6 +1,12 @@
+# SwiftPM / build output
 .build/
 build/
 .swiftpm/
 *.xcodeproj/
 DerivedData/
+
+# macOS
 .DS_Store
+
+# Local signing setup (scripts/setup-signing.sh)
+.signing.env

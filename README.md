@@ -95,11 +95,21 @@ MiniTab needs powerful permissions, so it is designed to use as little of them a
 - **Recency tracking stores IDs only.** Window IDs (up to 128), never titles or content.
 - **Hardened runtime.** The build is signed with `--options runtime` and the signature is verified.
 
-### About code signing
+### Code signing
 
-By default `build.sh` uses an ad-hoc signature. macOS then ties MiniTab's permissions to the exact binary, so **each rebuild requires re-enabling the permissions**. This is intentional: nothing else can ever inherit MiniTab's access.
+MiniTab supports two signing modes.
 
-You can sign with your own certificate (`SIGN_IDENTITY="Name" ./build.sh --install`) to keep permissions across rebuilds. Be aware that macOS then trusts *any* binary signed with that key under MiniTab's bundle ID. Keep the key in a separate, locked keychain and never choose "Always Allow" when `codesign` asks to use it.
+**Ad-hoc (default).** macOS ties MiniTab's permissions to the exact binary, so nothing else can ever inherit them. The trade-off is that each new build needs the permissions enabled again. `./build.sh --install` clears the outdated entries automatically, so you only switch MiniTab on when macOS asks.
+
+**Local signing identity (optional).** Permissions survive rebuilds. Run once:
+
+```bash
+./scripts/setup-signing.sh
+```
+
+This creates a self-signed code-signing certificate in a dedicated, password-protected keychain that locks after five minutes and on sleep, and that grants no application silent access to the key. `build.sh` picks it up automatically. When signing, macOS asks for that keychain's password and whether `codesign` may use the key: choose **Allow**, never **Always Allow**.
+
+Why the extra care: with a stable identity, macOS grants MiniTab's permissions to *any* binary signed with that key under MiniTab's bundle ID. Keeping the key locked and confirmation-gated ensures it can't be used silently. To remove it: `security delete-keychain ~/Library/Keychains/minitab-signing.keychain-db && rm .signing.env`.
 
 ## How it works
 
@@ -114,6 +124,7 @@ You can sign with your own certificate (`SIGN_IDENTITY="Name" ./build.sh --insta
 | `WindowMenu.swift` | Fallback that focuses a window through its app's Window menu |
 | `Spaces.swift`, `AXPrivate.swift`, `NativeSwitcher.swift` | Optional private APIs (see below) |
 | `AppDelegate.swift` | App lifecycle, menu bar, settings, watchdogs |
+| `build.sh`, `scripts/setup-signing.sh` | Build, sign and install; optional local signing identity |
 
 ### Private APIs
 
@@ -142,7 +153,7 @@ Turning off **Include Other Spaces** disables everything Spaces-related. Runtime
 
 | Problem | Solution |
 |---|---|
-| Shortcut does nothing after a rebuild | Re-enable MiniTab in Accessibility (and Screen Recording); see [About code signing](#about-code-signing) |
+| Shortcut does nothing after a rebuild | Switch MiniTab on in Accessibility (and Screen Recording), or set up a local signing identity; see [Code signing](#code-signing) |
 | Permissions are stuck | `tccutil reset Accessibility io.github.lftorresg.minitab` (and `ScreenCapture`), then grant again |
 | ⌘Tab stopped working after a crash | Launch MiniTab again (it restores the system ⌘Tab at startup), or log out and back in |
 | Shortcut ignored in password fields | macOS Secure Input blocks keyboard monitoring; MiniTab falls back to switching to the previous window and shows ⚠︎ in the menu |
